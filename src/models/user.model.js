@@ -23,7 +23,7 @@ const userSchema = new Schema(
         password: {
             type: String,
             required: [true, "Password is required"],
-            select: false, // Prevents password from being returned in query results by default
+            select: false,
         },
         verified: {
             type: Boolean,
@@ -31,19 +31,35 @@ const userSchema = new Schema(
         },
     },
     {
-        timestamps: true, // Automatically manages createdAt and updatedAt fields
+        timestamps: true, 
     }
 );
 
-userSchema.pre("save", async function (next) {
-    if (!this.isModified("password")) return next();
+userSchema.set("toJSON", {
+    transform: function (doc, ret) {
+        delete ret.password;
+        delete ret.__v;
+        return ret;
+    }
+});
+
+userSchema.set("toObject", {
+    transform: function (doc, ret) {
+        delete ret.password;
+        delete ret.__v;
+        return ret;
+    }
+});
+
+
+userSchema.pre("save", async function () {
+    if (!this.isModified("password")) return;
     
     try {
         const salt = await bcrypt.genSalt(10);
         this.password = await bcrypt.hash(this.password, salt);
-        next();
     } catch (error) {
-        next(error);
+        throw error;
     }
 });
 
@@ -51,4 +67,4 @@ userSchema.methods.isPasswordCorrect = async function (password) {
     return await bcrypt.compare(password, this.password);
 };
 
-export const User = mongoose.model("User", userSchema);
+export const userModel = mongoose.model("User", userSchema);

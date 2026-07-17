@@ -16,8 +16,8 @@ const chatSchema = new Schema(
         },
     },
     {
-        timestamps: true, // Automatically manages createdAt and updatedAt fields
+        timestamps: true, 
     }
 );
 
-export const Chat = mongoose.model("Chat", chatSchema);
+export const chatModel = mongoose.model("Chat", chatSchema);

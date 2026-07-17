@@ -17,7 +17,7 @@ const messageSchema = new Schema(
             enum: ["user", "ai"],
             required: [true, "Role must be either 'user' or 'ai'"],
         },
-        // Additional fields specifically relevant for a Perplexity-like application:
+        
         sources: [
             {
                 title: {
@@ -40,8 +40,8 @@ const messageSchema = new Schema(
         ],
     },
     {
-        timestamps: true, // Highly recommended for sorting messages in chronological order
+        timestamps: true,
     }
 );
 
-export const Message = mongoose.model("Message", messageSchema);
+export const messageModel = mongoose.model("Message", messageSchema);

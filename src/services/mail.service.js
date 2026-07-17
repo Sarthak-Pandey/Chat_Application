@@ -33,5 +33,5 @@ export async function sendMail({ to, subject, html, text }) {
     };
 
     const details = await tranporter.sendMail(mailOption);
-    console.log("Email sent successfully", details);
+    console.log("Email sent successfully");
 }

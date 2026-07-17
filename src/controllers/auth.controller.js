@@ -27,16 +27,26 @@ export async function register(req, res) {
             password
         });
 
+        const emailVerificationToken = jwt.sign({
+            email: newUser.email,
+        }, process.env.JWT_SECRET, {
+            expiresIn: '1d'
+        })
+
+
         try {
             await sendMail({
                 to: email,
                 subject: "Welcome to Perplexity",
                 html: `<h1>Hello ${username},</h1>
                 <p>Thank You registering at <strong>Perplexity</strong>.</p>
+                <p>Please verify your email by clicking on the link below:</p>
+                <a href="http://localhost:3000/api/auth/verify-email?token=${emailVerificationToken}">Verify Email</a>
                 <p>We're excited to have you on board.</p>
                 <p>Best regards,</p>
                 <p>The Perplexity Team</p>`
             });
+
         } catch (mailError) {
             console.error("Warning: Welcome email failed to send:", mailError.message || mailError);
         }
@@ -55,3 +65,93 @@ export async function register(req, res) {
         });
     }
 }
+
+
+
+export async function verifyEmail(req, res) {
+    try {
+        const { token } = req.query;
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        const user = await userModel.findOne({ email: decoded.email });
+
+        if (!user) {
+            return res.status(400).json({
+                message: "Invalid Token",
+                success: false
+            });
+        }
+
+        user.verified = true;
+
+        await user.save();
+
+        const html = `
+        <h1>Your Email has been verified</h1>
+        <p>You email has been verified. You can log in to your account</p>
+        `;
+
+        res.send(html);
+    } catch (error) {
+        console.error("Verify Email Error:", error);
+        return res.status(400).json({
+            success: false,
+            message: "Invalid or expired verification token"
+        });
+    }
+}
+
+
+
+export async function login(req, res) {
+    try {
+        const { email, password } = req.body;
+
+        const user = await userModel.findOne({ email: email.toLowerCase() }).select("+password");
+
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid email or password"
+            });
+        }
+
+        const isPasswordCorrect = await user.isPasswordCorrect(password);
+        if (!isPasswordCorrect) {   
+            return res.status(401).json({
+                success: false,
+                message: "Invalid email or password"
+            });
+        }
+
+        if(!user.verified){
+            return res.status(400).json({
+                success: false,
+                message: "Your email is not verified"
+            });
+        }
+
+
+        const token = jwt.sign({
+            id:user._id,
+            username:user.username,
+        },process.env.JWT_SECRET,{expiresIn:'1d'});
+
+        res.cookie("token",token);
+
+        return res.status(200).json({
+            success: true,
+            message: "Logged in successfully",
+            user
+        });
+
+    } catch (error) {
+        console.error("Login Controller Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error during login"
+        });
+    }
+}
+

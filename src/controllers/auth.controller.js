@@ -156,6 +156,7 @@ export async function login(req, res) {
 }
 
 
+
 export async function getMe(req, res) {
     try {
         const user = await userModel.findById(req.user.id);

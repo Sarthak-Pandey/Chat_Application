@@ -1,7 +1,6 @@
-import { userModel } from '../models/user.model.js'
-import jwt from 'jsonwebtoken'
+import { userModel } from '../models/user.model.js';
+import jwt from 'jsonwebtoken';
 import { sendMail } from '../services/mail.service.js';
-
 
 export async function register(req, res) {
     try {
@@ -15,6 +14,15 @@ export async function register(req, res) {
         });
 
         if (existingUser) {
+            // Requirement: Already registered but not verified Email check
+            if (existingUser.email.toLowerCase() === email.toLowerCase() && !existingUser.verified) {
+                return res.status(400).json({
+                    success: false,
+                    isUnverifiedExisting: true,
+                    email: existingUser.email,
+                    message: "This email is already registered but not verified. Please check your inbox and verify your email before logging in."
+                });
+            }
             return res.status(409).json({
                 success: false,
                 message: "Username or email is already registered"
@@ -31,8 +39,7 @@ export async function register(req, res) {
             email: newUser.email,
         }, process.env.JWT_SECRET, {
             expiresIn: '1d'
-        })
-
+        });
 
         try {
             await sendMail({
@@ -41,12 +48,11 @@ export async function register(req, res) {
                 html: `<h1>Hello ${username},</h1>
                 <p>Thank You registering at <strong>Perplexity</strong>.</p>
                 <p>Please verify your email by clicking on the link below:</p>
-                <a href="http://localhost:3000/api/auth/verify-email?token=${emailVerificationToken}">Verify Email</a>
+                <a href="http://localhost:5173/login?token=${emailVerificationToken}">Verify Email</a>
                 <p>We're excited to have you on board.</p>
                 <p>Best regards,</p>
                 <p>The Perplexity Team</p>`
             });
-
         } catch (mailError) {
             console.error("Warning: Welcome email failed to send:", mailError.message || mailError);
         }
@@ -66,8 +72,6 @@ export async function register(req, res) {
     }
 }
 
-
-
 export async function verifyEmail(req, res) {
     try {
         const { token } = req.query;
@@ -84,25 +88,20 @@ export async function verifyEmail(req, res) {
         }
 
         user.verified = true;
-
         await user.save();
 
-        const html = `
-        <h1>Your Email has been verified</h1>
-        <p>You email has been verified. You can log in to your account</p>
-        `;
-
-        res.send(html);
+        return res.status(200).json({
+            success: true,
+            message: "Your email has been verified successfully. You can now log in."
+        });
     } catch (error) {
         console.error("Verify Email Error:", error);
         return res.status(400).json({
             success: false,
-            message: "Invalid or expired verification token"
+            message: error.message || "Invalid or expired verification token"
         });
     }
 }
-
-
 
 export async function login(req, res) {
     try {
@@ -125,20 +124,22 @@ export async function login(req, res) {
             });
         }
 
-        if(!user.verified){
+        // Requirement: Log in unverified user block with custom flag & message
+        if (!user.verified) {
             return res.status(400).json({
                 success: false,
-                message: "Your email is not verified"
+                isUnverifiedUser: true,
+                email: user.email,
+                message: "Your email is not verified yet. Please verify your email before logging in."
             });
         }
 
-
         const token = jwt.sign({
-            id:user._id,
-            username:user.username,
-        },process.env.JWT_SECRET,{expiresIn:'1d'});
+            id: user._id,
+            username: user.username,
+        }, process.env.JWT_SECRET, { expiresIn: '1d' });
 
-        res.cookie("token",token);
+        res.cookie("token", token);
 
         return res.status(200).json({
             success: true,
@@ -154,8 +155,6 @@ export async function login(req, res) {
         });
     }
 }
-
-
 
 export async function getMe(req, res) {
     try {
@@ -179,4 +178,65 @@ export async function getMe(req, res) {
     }
 }
 
+export async function resendVerification(req, res) {
+    try {
+        const { email } = req.body;
 
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: "Email is required"
+            });
+        }
+
+        const user = await userModel.findOne({ email: email.toLowerCase() });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        if (user.verified) {
+            return res.status(400).json({
+                success: false,
+                message: "Email is already verified"
+            });
+        }
+
+        const emailVerificationToken = jwt.sign({
+            email: user.email,
+        }, process.env.JWT_SECRET, {
+            expiresIn: '1d'
+        });
+
+        try {
+            await sendMail({
+                to: user.email,
+                subject: "Welcome to Perplexity",
+                html: `<h1>Hello ${user.username},</h1>
+                <p>Thank You registering at <strong>Perplexity</strong>.</p>
+                <p>Please verify your email by clicking on the link below:</p>
+                <a href="http://localhost:5173/login?token=${emailVerificationToken}">Verify Email</a>
+                <p>We're excited to have you on board.</p>
+                <p>Best regards,</p>
+                <p>The Perplexity Team</p>`
+            });
+        } catch (mailError) {
+            console.error("Warning: Resend email failed to send:", mailError.message || mailError);
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Verification link resent successfully"
+        });
+
+    } catch (error) {
+        console.error("Resend Verification Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error during resending verification"
+        });
+    }
+}

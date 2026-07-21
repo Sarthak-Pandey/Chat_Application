@@ -7,7 +7,6 @@ import connectDB from "./src/config/database.js";
 import app from "./src/app.js";
 import { initializeServer } from './src/sockets/server.socket.js';
 
-
 const PORT = process.env.PORT || 8000;
 
 

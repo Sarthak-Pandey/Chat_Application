@@ -13,8 +13,6 @@ export function initializeServer(httpServer){
         }
     })
 
-
-
     console.log("Socket.io server is running");
 
     io.on("connection",(socket)=>{

@@ -1,17 +1,21 @@
 import { createBrowserRouter } from "react-router";
 import Login from "../features/auth/pages/Login.jsx";
 import Register from "../features/auth/pages/Register.jsx";
-import Dashboard from "../features/auth/pages/Dashboard.jsx";
+import Dashboard from "../features/chat/pages/DashBoard.jsx";
 import { ProtectedRoute } from "../features/auth/components/ProtectedRoute.jsx";
+import { Navigate } from "react-router";
+
 
 export const router = createBrowserRouter([
   {
     path: "/",
     element: (
-      <ProtectedRoute requireAuth={true}>
         <Dashboard />
-      </ProtectedRoute>
     ),
+  },
+  {
+    path:"/dashboard",
+    element:<Navigate to="/" replace/>
   },
   {
     path: "/login",
@@ -31,4 +35,4 @@ export const router = createBrowserRouter([
   },
 ]);
 
-export default router;
+export default router;

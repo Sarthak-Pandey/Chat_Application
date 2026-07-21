@@ -16,28 +16,7 @@ const messageSchema = new Schema(
             type: String,
             enum: ["user", "ai"],
             required: [true, "Role must be either 'user' or 'ai'"],
-        },
-        
-        sources: [
-            {
-                title: {
-                    type: String,
-                    required: true,
-                },
-                url: {
-                    type: String,
-                    required: true,
-                },
-                snippet: {
-                    type: String,
-                },
-            },
-        ],
-        suggestions: [
-            {
-                type: String,
-            },
-        ],
+        }
     },
     {
         timestamps: true,

@@ -14,7 +14,6 @@ export async function register(req, res) {
         });
 
         if (existingUser) {
-            // Requirement: Already registered but not verified Email check
             if (existingUser.email.toLowerCase() === email.toLowerCase() && !existingUser.verified) {
                 return res.status(400).json({
                     success: false,
@@ -124,7 +123,6 @@ export async function login(req, res) {
             });
         }
 
-        // Requirement: Log in unverified user block with custom flag & message
         if (!user.verified) {
             return res.status(400).json({
                 success: false,
@@ -240,3 +238,5 @@ export async function resendVerification(req, res) {
         });
     }
 }
+
+

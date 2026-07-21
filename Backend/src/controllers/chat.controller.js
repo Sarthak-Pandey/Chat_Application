@@ -41,8 +41,55 @@ export async function sendMessage(req,res){
     );
 }   
 
+export async function getChats(req,res){
+    const chats = await chatModel.find({user:req.user.id}).sort({updatedAt:-1});
+    res.status(200).json({
+        message:"Chat recived successfully",
+        chats
+    })
+}
 
+export async function getMessages(req,res){
+    const {chatId} = req.params;
+    const chat = await chatModel.find({chat:chatId},{user:req.user.id});
 
+    if(!chat){
+        return res.status(404).json({
+            message:"Chat not found"
+        })
+    }
 
+    const message = await messageModel.find({chat:chatId});
+
+    res.status(400).json({
+        message:"Message retrived succeesfully",
+        message
+    })
+}
+
+export async function deleteChat(req,res){
+
+    const { chatId } = req.params;
+    
+    const chat = await chatModel.findOneAndDelete({
+        _id:chatId,
+        user:req.user.id
+    });
+
+    await messageModel.deleteMany({
+        chat : chatId
+    })
+
+    if(!chat){
+        return res.status(400).json({
+            message:"Chat not found"
+        })
+    }
+
+    res.status(200).json({
+        message:"Chat delete successfully"
+    })
+
+}
 
 

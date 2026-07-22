@@ -11,6 +11,7 @@ export const groqModel = new ChatGroq({
     maxRetries: 2,
 })
 
+
 export const mistralModel = new ChatMistralAI({
     apiKey: process.env.MISTRAL_API_KEY,
     model: "mistral-small-latest",
@@ -30,6 +31,20 @@ export async function GenerateResponse(messages){
         }
     }));
     return response.content;
+}
+
+export async function* GenerateResponseStream(messages){
+    const stream = await groqModel.stream(messages.map(msg=>{
+        if(msg.role === "user"){
+            return new HumanMessage(msg.content);
+        }
+        else{
+            return new AIMessage(msg.content);
+        }
+    }));
+    for await (const chunk of stream) {
+        yield chunk.content;
+    }
 }
 
 

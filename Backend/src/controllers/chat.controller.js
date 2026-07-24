@@ -1,4 +1,4 @@
-import {GenerateResponse,GenerateChatTitle,GenerateResponseStream} from '../services/ai.service.js'
+import {GenerateResponse,GenerateChatTitle,} from '../services/ai.service.js'
 import { chatModel } from '../models/chat.model.js'
 import { messageModel } from '../models/message.model.js'
 import { getIO } from '../sockets/server.socket.js'
@@ -29,22 +29,15 @@ export async function sendMessage(req,res){
         const io = getIO();
         
         try {
-            const stream = GenerateResponseStream(messages);
-            for await (const chunk of stream) {
-                fullResponse += chunk;
-                io.to(socketId).emit("message:token", {
-                    chatId: chatId || chat._id,
-                    content: chunk,
-                    tempId
-                });
-            }
+            const result = await GenerateResponse(messages);
             
             const aimessage = await messageModel.create({
                 chat: chatId || chat._id,
-                content: fullResponse,
+                content: result,
                 role: "ai"
             });
 
+            // Emit the final message back via socket
             io.to(socketId).emit("message:done", {
                 chatId: chatId || chat._id,
                 aimessage,
@@ -55,7 +48,7 @@ export async function sendMessage(req,res){
                 title,
                 chat,
                 aimessage,
-                streamed: true
+                streamed: false
             });
         } catch (error) {
             console.error("Streaming error:", error);

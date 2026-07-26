@@ -3,17 +3,16 @@ dotenv.config();
 import nodemailer from 'nodemailer'
 
 const authConfig = {
-        type: 'OAuth2',
-        user: process.env.GOOGLE_USER,
-        clientId: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
+        user:process.env.GOOGLE_USER,
+        pass:process.env.GOOGLE_APP_PASSWORD
       };
+
 
 const tranporter = nodemailer.createTransport({
     service: "gmail",
     auth: authConfig,
 });
+
 
 tranporter.verify(async (err, success) => {
     if (err) {
@@ -22,6 +21,7 @@ tranporter.verify(async (err, success) => {
         console.log("Nodemailer is ready to send emails", success);
     }
 });
+
 
 export async function sendMail({ to, subject, html, text }) {
     const mailOption = {
@@ -35,3 +35,4 @@ export async function sendMail({ to, subject, html, text }) {
     const details = await tranporter.sendMail(mailOption);
     console.log("Email sent successfully");
 }
+

@@ -3,6 +3,7 @@ import { ChatMistralAI } from "@langchain/mistralai"
 import { createAgent } from "langchain"
 import { HumanMessage, SystemMessage, AIMessage } from "@langchain/core/messages"
 import { searchInternetTool } from "../tools/knowlegde/search.tool.js"
+import { extractWebTool } from "../tools/knowlegde/extract.tool.js"
 
 export const groqModel = new ChatGroq({
     apiKey: process.env.GROQ_API_KEY,
@@ -23,9 +24,19 @@ export const mistralModel = new ChatMistralAI({
 
 const agent = createAgent({
     model: groqModel,
-    tools: [searchInternetTool],
-    systemMessage: "You are a helpful AI assistant. You must use the searchInternet tool whenever you need up-to-date, real-time, or factual information that you don't know."
+    tools: [searchInternetTool, extractWebTool],
+    systemMessage: `You are a helpful AI assistant with search and web extraction capabilities.
+
+Use the "searchInternet" tool to find relevant information, news, current events, weather, stock prices, or general facts when the user's query requires up-to-date or external information.
+
+Use the "extractWeb" tool to retrieve the page content of a specific URL when the user provides a link or when you need to read the details of a specific webpage found during a search.
+
+If you already know the answer and it is not time-sensitive, answer directly without using any tool.
+
+When you use a tool, use its result as the primary source for your response.`,
 });
+
+
 
 export async function GenerateResponse(messages) {
     const formattedMessages = messages.map(msg => {

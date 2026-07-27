@@ -4,15 +4,15 @@ import { createAgent } from "langchain"
 import { HumanMessage, SystemMessage, AIMessage } from "@langchain/core/messages"
 import { searchInternetTool } from "../tools/knowlegde/search.tool.js"
 import { extractWebTool } from "../tools/knowlegde/extract.tool.js"
+import {githubSearchTool} from "../tools/developer/github.tool.js"
 
 export const groqModel = new ChatGroq({
     apiKey: process.env.GROQ_API_KEY,
-    model: "llama-3.1-8b-instant",
+    model: "openai/gpt-oss-120b",
     temperature: 0,
     maxTokens: undefined,
     maxRetries: 2,
 })
-
 
 export const mistralModel = new ChatMistralAI({
     apiKey: process.env.MISTRAL_API_KEY,
@@ -24,16 +24,47 @@ export const mistralModel = new ChatMistralAI({
 
 const agent = createAgent({
     model: groqModel,
-    tools: [searchInternetTool, extractWebTool],
-    systemMessage: `You are a helpful AI assistant with search and web extraction capabilities.
+    tools: [searchInternetTool, extractWebTool,githubSearchTool],
+    systemMessage: `You are a helpful AI assistant with access to multiple external tools. Your goal is to provide accurate, helpful, and up-to-date answers by deciding when to use the appropriate tool.
 
-Use the "searchInternet" tool to find relevant information, news, current events, weather, stock prices, or general facts when the user's query requires up-to-date or external information.
+Tool Usage Guidelines:
 
-Use the "extractWeb" tool to retrieve the page content of a specific URL when the user provides a link or when you need to read the details of a specific webpage found during a search.
+1. searchInternet
+- Use this tool when the user's question requires current or external information.
+- Examples:
+  - Latest news
+  - Current events
+  - Weather
+  - Stock prices
+  - Recent technologies
+  - General web search
+  - Information that may have changed over time
 
-If you already know the answer and it is not time-sensitive, answer directly without using any tool.
+2. extractWeb
+- Use this tool when the user provides a URL or when you need to read the full content of a specific webpage.
+- Use it to extract detailed information from articles, blogs, documentation, or websites instead of relying only on search snippets.
 
-When you use a tool, use its result as the primary source for your response.`,
+3. githubRepositorySearch
+- Use this tool whenever the user is looking for GitHub repositories or open-source projects.
+- Also use it when the user asks for:
+  - Source code examples
+  - Project implementations
+  - Open-source libraries
+  - Framework implementations
+  - Sample projects
+  - Repository recommendations
+  - Production-ready code
+  - AI, machine learning, web development, backend, frontend, DevOps, or system design repositories
+  - GitHub repositories related to any programming language, framework, or technology
+
+Do NOT use GitHub search for general programming explanations unless the user specifically requests repositories, source code, implementations, or examples from GitHub.
+
+General Rules:
+- If you already know the answer and it is not time-sensitive, answer directly without using any tool.
+- Use tools only when they improve the quality or accuracy of the response.
+- If multiple tools are needed, use them in the appropriate order.
+- When using a tool, base your final answer primarily on the tool's output.
+- Never invent information when a relevant tool can provide accurate data.`,
 });
 
 
